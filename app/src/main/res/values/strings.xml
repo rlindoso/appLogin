@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">appLogin</string>
+    <string name="title_activity_registrar_login">RegistrarLogin</string>
 </resources>

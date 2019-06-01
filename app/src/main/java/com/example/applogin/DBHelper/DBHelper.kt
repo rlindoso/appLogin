@@ -33,7 +33,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
 
         // Create a new map of values, where column names are the keys
         val values = ContentValues()
-        values.put(DBContract.LoginEntry.COLUMN_USER_ID, login.id)
         values.put(DBContract.LoginEntry.EMAIL, login.email)
         values.put(DBContract.LoginEntry.LOGIN, login.login)
         values.put(DBContract.LoginEntry.NOME, login.nome)
@@ -59,12 +58,12 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         return true
     }
 
-    fun readLogin(loginID: Int): Login? {
+    fun readLogin(pPogin: String?): Login? {
         var login: Login? = null
         val db = writableDatabase
         var cursor: Cursor?
         try {
-            cursor = db.rawQuery("select * from " + DBContract.LoginEntry.TABLE_NAME + " WHERE " + DBContract.LoginEntry.COLUMN_USER_ID + "='" + loginID + "'", null)
+            cursor = db.rawQuery("select * from " + DBContract.LoginEntry.TABLE_NAME + " WHERE " + DBContract.LoginEntry.LOGIN + "='" + pPogin + "'", null)
         } catch (e: SQLiteException) {
             // if table not yet present, create it
             db.execSQL(SQL_CREATE_ENTRIES)

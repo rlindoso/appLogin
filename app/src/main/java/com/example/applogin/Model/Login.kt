@@ -18,7 +18,7 @@ class Login(): Parcelable {
         email = parcel.readString()
     }
 
-    constructor(id: Int?, login: String?, senha: String?, nome: String?, email: String?) : this() {
+    constructor(id: Int? = -1, login: String?, senha: String?, nome: String?, email: String?) : this() {
         this.login = login
         this.senha = senha
         this.nome = nome
