@@ -121,6 +121,41 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         return login
     }
 
+    fun getLogin(login: Login): Login {
+        var userLogged: Login? = null
+        val db = writableDatabase
+        var cursor: Cursor?
+        try {
+            cursor = db.rawQuery("select * from " +
+                    DBContract.LoginEntry.TABLE_NAME +
+                    " WHERE " + DBContract.LoginEntry.LOGIN + "='" + login!!.login + "' and " +
+                    DBContract.LoginEntry.SENHA + "='" + login.senha +"'", null)
+        } catch (e: SQLiteException) {
+            // if table not yet present, create it
+            db.execSQL(SQL_CREATE_ENTRIES)
+            return Login()
+        }
+
+        var id: Int
+        var lLogin: String
+        var senha: String
+        var nome: String
+        var email: String
+        if (cursor!!.moveToFirst()) {
+            while (!cursor.isAfterLast) {
+                id = cursor.getInt(cursor.getColumnIndex(DBContract.LoginEntry.COLUMN_USER_ID))
+                lLogin = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.LOGIN))
+                senha = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.SENHA))
+                nome = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.NOME))
+                email = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.EMAIL))
+
+                userLogged = Login(id, lLogin, senha, nome, email)
+                cursor.moveToNext()
+            }
+        }
+        return userLogged ?: Login()
+    }
+
     companion object {
         // If you change the database schema, you must increment the database version.
         val DATABASE_VERSION = 1

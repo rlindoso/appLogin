@@ -8,6 +8,10 @@ import com.example.applogin.R
 import kotlinx.android.synthetic.main.activity_registrar_login.*
 
 class RegistrarLoginActivity : AppCompatActivity(), RegistarLoginContract.View {
+    override fun finalizar() {
+        onBackPressed()
+    }
+
     override fun focusErro(campo: RegistarLoginContract.View.CAMPO, msgErro: String) {
         when(campo) {
             RegistarLoginContract.View.CAMPO.LOGIN -> {

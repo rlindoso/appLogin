@@ -14,7 +14,10 @@ class RegistrarLoginPresenter: RegistarLoginContract.Presenter {
 
     override fun salvaLogin(login: Login) {
         if (validaUsuario(login)) {
-            dbHelper.insertLogin(login)
+            if (dbHelper.insertLogin(login)) {
+                mView!!.showMessage("Usuário cadastrado com sucesso!")
+                mView!!.finalizar()
+            }
         }
     }
 

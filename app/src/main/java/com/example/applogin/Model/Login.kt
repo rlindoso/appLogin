@@ -7,7 +7,7 @@ class Login(): Parcelable {
     var login: String? = null
     var senha: String? = null
     var nome: String? = null
-    var id: Int? = null
+    var id: Int? = -1
     var email: String? = null
 
     constructor(parcel: Parcel) : this() {

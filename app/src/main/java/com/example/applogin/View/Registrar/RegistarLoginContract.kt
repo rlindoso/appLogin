@@ -11,6 +11,7 @@ interface RegistarLoginContract {
         }
         fun showMessage(message: String)
         fun focusErro(campo: CAMPO, msgErro: String)
+        fun finalizar()
     }
 
     interface Presenter {
