@@ -9,6 +9,9 @@ class Login(): Parcelable {
     var nome: String? = null
     var id: Int? = -1
     var email: String? = null
+    var encrypted: String? = null
+    var salt: String? = null
+    var iv: String? = null
 
     constructor(parcel: Parcel) : this() {
         login = parcel.readString()
@@ -24,6 +27,26 @@ class Login(): Parcelable {
         this.nome = nome
         this.id = id
         this.email = email
+    }
+
+    constructor(
+        id: Int = -1,
+        login: String?,
+        senha: String?,
+        nome: String?,
+        email: String?,
+        encrypted: String?,
+        salt: String?,
+        iv: String?
+    ) : this() {
+        this.login = login
+        this.senha = senha
+        this.nome = nome
+        this.id = id
+        this.email = email
+        this.encrypted = encrypted
+        this.salt = salt
+        this.iv = iv
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {

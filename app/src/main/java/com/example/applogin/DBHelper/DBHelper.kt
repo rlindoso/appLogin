@@ -7,8 +7,11 @@ import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Base64
 import com.example.applogin.Model.Login
-import java.util.ArrayList
+import com.example.applogin.Utils.Encryption
+import java.text.DateFormat
+import java.util.*
 
 class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -28,6 +31,14 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
 
     @Throws(SQLiteConstraintException::class)
     fun insertLogin(login: Login): Boolean {
+        val currentDateTimeString = DateFormat.getDateTimeInstance().format(Date())
+        val map =
+            Encryption().encrypt(currentDateTimeString.toByteArray(Charsets.UTF_8), login.senha!!.toCharArray())
+
+        login.encrypted = Base64.encodeToString(map["encrypted"], Base64.NO_WRAP)
+        login.salt = Base64.encodeToString(map["salt"], Base64.NO_WRAP)
+        login.iv = Base64.encodeToString(map["iv"], Base64.NO_WRAP)
+
         // Gets the data repository in write mode
         val db = writableDatabase
 
@@ -36,7 +47,9 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         values.put(DBContract.LoginEntry.EMAIL, login.email)
         values.put(DBContract.LoginEntry.LOGIN, login.login)
         values.put(DBContract.LoginEntry.NOME, login.nome)
-        values.put(DBContract.LoginEntry.SENHA, login.senha)
+        values.put(DBContract.LoginEntry.ENCRYPTED, login.encrypted)
+        values.put(DBContract.LoginEntry.SALT, login.salt)
+        values.put(DBContract.LoginEntry.IV, login.iv)
 
         // Insert the new row, returning the primary key value of the new row
         val newRowId = db.insert(DBContract.LoginEntry.TABLE_NAME, null, values)
@@ -61,7 +74,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
     fun readLogin(pPogin: String?): Login? {
         var login: Login? = null
         val db = writableDatabase
-        var cursor: Cursor?
+        val cursor: Cursor?
         try {
             cursor = db.rawQuery("select * from " + DBContract.LoginEntry.TABLE_NAME + " WHERE " + DBContract.LoginEntry.LOGIN + "='" + pPogin + "'", null)
         } catch (e: SQLiteException) {
@@ -72,18 +85,16 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
 
         var id: Int
         var lLogin: String
-        var senha: String
         var nome: String
         var email: String
         if (cursor!!.moveToFirst()) {
-            while (cursor.isAfterLast == false) {
+            while (!cursor.isAfterLast) {
                 id = cursor.getInt(cursor.getColumnIndex(DBContract.LoginEntry.COLUMN_USER_ID))
                 lLogin = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.LOGIN))
-                senha = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.SENHA))
                 nome = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.NOME))
                 email = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.EMAIL))
 
-                login = Login(id, lLogin, senha, nome, email)
+                login = Login(id, lLogin, "", nome, email)
                 cursor.moveToNext()
             }
         }
@@ -93,7 +104,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
     fun readAllLogin(): ArrayList<Login> {
         val login = ArrayList<Login>()
         val db = writableDatabase
-        var cursor: Cursor? = null
+        var cursor: Cursor?
         try {
             cursor = db.rawQuery("select * from " + DBContract.LoginEntry.TABLE_NAME, null)
         } catch (e: SQLiteException) {
@@ -103,18 +114,16 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
 
         var id: Int
         var lLogin: String
-        var senha: String
         var nome: String
         var email: String
         if (cursor!!.moveToFirst()) {
-            while (cursor.isAfterLast == false) {
+            while (!cursor.isAfterLast) {
                 id = cursor.getInt(cursor.getColumnIndex(DBContract.LoginEntry.COLUMN_USER_ID))
                 lLogin = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.LOGIN))
-                senha = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.SENHA))
                 nome = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.NOME))
                 email = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.EMAIL))
 
-                login.add(Login(id, lLogin, senha, nome, email))
+                login.add(Login(id, lLogin, "", nome, email))
                 cursor.moveToNext()
             }
         }
@@ -126,10 +135,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         val db = writableDatabase
         var cursor: Cursor?
         try {
-            cursor = db.rawQuery("select * from " +
-                    DBContract.LoginEntry.TABLE_NAME +
-                    " WHERE " + DBContract.LoginEntry.LOGIN + "='" + login!!.login + "' and " +
-                    DBContract.LoginEntry.SENHA + "='" + login.senha +"'", null)
+            cursor = db.rawQuery("select * from " + DBContract.LoginEntry.TABLE_NAME + " WHERE " + DBContract.LoginEntry.LOGIN + "='" + login.login + "'", null)
         } catch (e: SQLiteException) {
             // if table not yet present, create it
             db.execSQL(SQL_CREATE_ENTRIES)
@@ -138,18 +144,33 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
 
         var id: Int
         var lLogin: String
-        var senha: String
         var nome: String
         var email: String
+        var encrypted: String
+        var salt: String
+        var iv: String
         if (cursor!!.moveToFirst()) {
             while (!cursor.isAfterLast) {
                 id = cursor.getInt(cursor.getColumnIndex(DBContract.LoginEntry.COLUMN_USER_ID))
                 lLogin = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.LOGIN))
-                senha = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.SENHA))
                 nome = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.NOME))
                 email = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.EMAIL))
+                encrypted = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.ENCRYPTED))
+                salt = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.SALT))
+                iv = cursor.getString(cursor.getColumnIndex(DBContract.LoginEntry.IV))
 
-                userLogged = Login(id, lLogin, senha, nome, email)
+                //Base64 decode
+                val base64Encrypted = Base64.decode(encrypted, Base64.NO_WRAP)
+                val base64Salt = Base64.decode(salt, Base64.NO_WRAP)
+                val base64Iv = Base64.decode(iv, Base64.NO_WRAP)
+
+                //Decrypt
+                val decrypted = Encryption().decrypt(
+                    hashMapOf("iv" to base64Iv, "salt" to base64Salt, "encrypted" to base64Encrypted), login.senha!!.toCharArray())
+
+                decrypted?.let {
+                    userLogged = Login(id, lLogin, "", nome, email)
+                }
                 cursor.moveToNext()
             }
         }
@@ -158,15 +179,17 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
 
     companion object {
         // If you change the database schema, you must increment the database version.
-        val DATABASE_VERSION = 1
+        val DATABASE_VERSION = 2
         val DATABASE_NAME = "Login.db"
 
         private val SQL_CREATE_ENTRIES =
             "CREATE TABLE " + DBContract.LoginEntry.TABLE_NAME + " (" +
                     DBContract.LoginEntry.COLUMN_USER_ID + " INTEGER PRIMARY KEY," +
-                    DBContract.LoginEntry.SENHA + " TEXT," +
                     DBContract.LoginEntry.NOME + " TEXT," +
                     DBContract.LoginEntry.EMAIL + " TEXT," +
+                    DBContract.LoginEntry.ENCRYPTED + " TEXT," +
+                    DBContract.LoginEntry.SALT + " TEXT," +
+                    DBContract.LoginEntry.IV + " TEXT," +
                     DBContract.LoginEntry.LOGIN + " TEXT)"
 
         private val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS " + DBContract.LoginEntry.TABLE_NAME

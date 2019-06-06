@@ -9,9 +9,11 @@ object DBContract {
             val TABLE_NAME = "User"
             val COLUMN_USER_ID = "id"
             val LOGIN = "login"
-            val SENHA = "senha"
             val NOME = "nome"
             val EMAIL = "email"
+            val ENCRYPTED = "encrypted"
+            val SALT = "salt"
+            val IV = "iv"
         }
     }
 
